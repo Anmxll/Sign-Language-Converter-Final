@@ -242,3 +242,4 @@ Export before a demo, and keep the file with the project.
 ---
 
 *Built as a capstone project. Hand tracking by Google MediaPipe; language features by Google Gemini.*
+
