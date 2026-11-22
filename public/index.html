@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SignBridge</title>
+<link rel="stylesheet" href="style.css?v=5">
+</head>
+<body>
+<header>
+  <div class="brand"><span class="logo">🤟</span><div><h1>SignBridge</h1><p>Live sign language → English</p></div></div>
+  <div class="chips">
+    <span class="chip" id="chipCam"><i></i>Camera</span>
+    <span class="chip" id="chipHands"><i></i>Hands</span>
+    <span class="chip" id="chipAI"><i></i>Gemini</span>
+  </div>
+</header>
+
+<main>
+  <section class="stage card">
+    <div class="video-wrap">
+      <video id="v" autoplay playsinline muted></video>
+      <canvas id="c"></canvas>
+      <div class="hud" id="hud">Press Start to begin</div>
+      <div class="holdbar"><div id="holdfill"></div></div>
+    </div>
+    <div class="controls">
+      <button id="start" class="primary">▶ Start camera</button>
+      <button id="now">Translate now</button>
+      <div class="seg" id="mode">
+        <button data-mode="hybrid" class="on" title="Your trained signs, polished into a sentence by Gemini">Hybrid</button>
+        <button data-mode="local" title="Works offline, no Gemini needed">My signs</button>
+        <button data-mode="spell" title="Fingerspell words letter by letter (A–Z)">Spell A–Z</button>
+        <button data-mode="gemini" title="Gemini reads camera frames directly">Gemini vision</button>
+      </div>
+    </div>
+    <div class="status" id="status">Idle</div>
+  </section>
+
+  <section class="side">
+    <div class="card out">
+      <div class="row between"><h2>Translation</h2>
+        <div class="row gap">
+          <label class="tog"><input type="checkbox" id="speak"> Speak</label>
+          <button class="ghost" id="copy">Copy</button>
+          <button class="ghost" id="save">Save .txt</button>
+          <button class="ghost" id="clear">Clear</button>
+        </div>
+      </div>
+      <div class="live" id="live">Waiting for signs…</div>
+      <div class="spellbar" id="spellbar" hidden>
+        <div class="suggest" id="suggest"></div>
+        <div class="row gap">
+          <button class="ghost" id="spSpace">Space</button>
+          <button class="ghost" id="spBack">⌫ Delete</button>
+          <button class="ghost" id="spDone">Done ✓</button>
+          <label class="tog"><input type="checkbox" id="spellfix" checked> Gemini spelling fix</label>
+        </div>
+        <div class="hint">Hold each letter ~0.7s. Lower your hand 1s for a space, 2.6s to finish. Relax your hand briefly to repeat a letter (e.g. the LL in HELLO).</div>
+      </div>
+      <div class="words" id="words"></div>
+      <div class="history" id="history"></div>
+    </div>
+
+    <div class="card">
+      <h2>Gemini</h2>
+      <div class="row gap">
+        <input id="key" type="password" placeholder="Paste Gemini API key (kept on the server)">
+        <button id="saveKey">Save</button>
+      </div>
+      <div class="hint" id="aiInfo">Not checked yet.</div>
+    </div>
+  </section>
+
+  <section class="card trainer">
+    <div class="row between"><h2>Teach it your signs <small>(works offline, most accurate for demos)</small></h2>
+      <div class="row gap"><button class="ghost" id="export">Export</button><button class="ghost" id="import">Import</button><button class="ghost danger" id="wipe">Delete all</button></div>
+    </div>
+    <div class="presets" id="presets"></div>
+    <div class="row gap">
+      <input id="label" placeholder="Word for this sign, e.g. Hello">
+      <button id="rec" class="primary">● Record sign (hold it steady)</button>
+    </div>
+    <div class="hint">Record each sign 2–3 times, slightly moving your hand. Hold a recognised sign ~0.7s to add the word.</div>
+    <div class="samples" id="samples"></div>
+    <label class="slider">Strictness <input type="range" id="strict" min="2" max="12" value="4"><span id="strictVal"></span></label>
+    <input type="file" id="file" accept="application/json" hidden>
+  </section>
+
+  <section class="card trainer" id="abc">
+    <div class="row between"><h2>Fingerspelling alphabet <small>(ASL A–Z, used by “Spell A–Z” mode)</small></h2>
+      <div class="row gap"><span class="hint" id="abcProg"></span><button class="ghost danger" id="abcWipe">Delete letters</button></div>
+    </div>
+    <div class="row gap">
+      <input id="letter" maxlength="1" placeholder="Letter, e.g. A" style="flex:0 0 140px;text-transform:uppercase">
+      <button id="recLetter" class="primary">● Record letter (hold it steady)</button>
+    </div>
+    <div class="hint">Click a letter below (or type it), make the hand shape, press Record and hold still. Record each letter 2 times for better accuracy (tile turns bright green). J = sign I, then hook the pinky (no recording needed). Z = record your pointing hand, then draw a Z in the air when spelling.</div>
+    <div class="abcstatus" id="abcStatus">Press “Start camera” at the top first.</div>
+    <button class="primary" id="useSpell" style="margin-top:10px">Use my letters → switch to Spell A–Z mode</button>
+    <div class="abc" id="abcGrid"></div>
+  </section>
+</main>
+
+<footer>Tip: good light, plain background, hands fully in view. Gemini reads still frames, so use it for fingerspelling and simple signs.</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+<script src="app.js?v=5"></script>
+</body>
+</html>
