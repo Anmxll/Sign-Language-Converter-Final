@@ -30,6 +30,7 @@ canvas{pointer-events:none}
 button{font:inherit;font-size:14px;padding:10px 16px;border-radius:12px;border:1px solid var(--line);background:#1a2340;color:var(--text);cursor:pointer;transition:.15s}
 button:hover{background:#243059}button:disabled{opacity:.5;cursor:default}
 button.primary{background:linear-gradient(135deg,var(--accent),#4a63e8);border:0;font-weight:600}
+button.primary.stop{background:linear-gradient(135deg,#ff6b7a,#d9435a)}
 button.ghost{background:transparent;padding:6px 12px;font-size:13px}
 button.danger:hover{background:#4a1d28}
 .seg{display:flex;background:#0d1326;border-radius:12px;padding:3px;border:1px solid var(--line)}

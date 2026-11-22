@@ -89,8 +89,12 @@ $("saveKey").onclick = async () => {
 };
 
 /* ---------- Camera + MediaPipe ---------- */
-$("start").onclick = async () => {
-  if (S.running) return;
+// One button toggles the camera: ▶ Start camera  <->  ■ Stop camera
+$("start").onclick = () => (S.running ? stopCamera() : startCamera());
+
+async function startCamera() {
+  const btn = $("start");
+  btn.disabled = true; btn.textContent = "Starting…";
   try {
     if (!navigator.mediaDevices) throw new Error("Open http://localhost:8000 (not the file directly)");
     status("Requesting camera…");
@@ -100,19 +104,44 @@ $("start").onclick = async () => {
     if (typeof Hands === "undefined") throw new Error("MediaPipe failed to load (internet / ad-blocker?)");
     c.width = v.videoWidth; c.height = v.videoHeight;
     cap.width = 512; cap.height = Math.round(512 * v.videoHeight / v.videoWidth);
-    S.hands = new Hands({ locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}` });
-    S.hands.setOptions({ maxNumHands: 2, modelComplexity: 1, minDetectionConfidence: 0.6, minTrackingConfidence: 0.5 });
-    S.hands.onResults(onResults);
-    S.running = true; $("start").textContent = "Camera on"; $("start").disabled = true;
-    hud("Show your hand"); status("Loading hand model (first time takes a few seconds)…");
+    if (!S.hands) {   // load the hand model once; reuse it after Stop/Start
+      S.hands = new Hands({ locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}` });
+      S.hands.setOptions({ maxNumHands: 2, modelComplexity: 1, minDetectionConfidence: 0.6, minTrackingConfidence: 0.5 });
+      S.hands.onResults(onResults);
+      status("Loading hand model (first time takes a few seconds)…");
+    } else status("Camera on");
+    S.running = true; S.lastHand = Date.now();
+    btn.textContent = "■ Stop camera"; btn.classList.add("stop"); btn.disabled = false;
+    hud("Show your hand");
     $("abcStatus").textContent = "Camera on. Click a letter below, then press “● Record letter”.";
-    const loop = async () => { try { await S.hands.send({ image: v }); } catch (e) { } requestAnimationFrame(loop); };
+    const gen = S.camGen = (S.camGen || 0) + 1;   // stops an old loop if the camera is restarted
+    const loop = async () => {
+      if (!S.running || gen !== S.camGen) return;
+      try { if (v.readyState >= 2) await S.hands.send({ image: v }); } catch (e) { }
+      requestAnimationFrame(loop);
+    };
     loop();
   } catch (e) {
+    stopCamera(true);
     chip("chipCam", "bad"); status("Error: " + (e.name || "") + " " + e.message);
     if (e.name === "NotAllowedError") status("Camera blocked. Click the lock icon in the address bar, allow Camera, reload.");
   }
-};
+}
+
+function stopCamera(silent) {
+  S.running = false;
+  if (v.srcObject) { v.srcObject.getTracks().forEach(t => t.stop()); v.srcObject = null; }   // turns the webcam light off
+  ctx.clearRect(0, 0, c.width, c.height);
+  if (S.recording) {   // cancel a recording in progress
+    S.recording = null; $("rec").disabled = false; $("recLetter").disabled = false; renderAbc();
+  }
+  S.cand = null; S.committed = null; S.trail = []; S.frames = []; S.handsSeen = false;
+  $("holdfill").style.width = "0";
+  const btn = $("start"); btn.textContent = "▶ Start camera"; btn.classList.remove("stop"); btn.disabled = false;
+  chip("chipCam", ""); chip("chipHands", "", "Hands");
+  hud("Press Start to begin");
+  if (!silent) { status("Camera stopped"); $("abcStatus").textContent = "Camera off. Press “▶ Start camera” at the top to record letters."; }
+}
 
 const CONN = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],[9,13],[13,14],[14,15],[15,16],[13,17],[17,18],[18,19],[19,20],[0,17]];
 function draw(hs) {
@@ -158,6 +187,7 @@ function classify(f, set = S.samples) {
 
 /* ---------- Main per-frame handler ---------- */
 function onResults(r) {
+  if (!S.running) return;   // ignore a late result after Stop camera
   const hs = r.multiHandLandmarks || [];
   draw(hs);
   const now = Date.now();
